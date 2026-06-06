@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Momo Catcher!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f7f1e3;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            max-width: 450px;
+            background: linear-gradient(to bottom, #fffae6, #ffeb99);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+        #scoreBoard {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #d35400;
+            z-index: 10;
+        }
+        #timerBoard {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #c0392b;
+            z-index: 10;
+        }
+        /* The Plate */
+        #plate {
+            width: 100px;
+            height: 20px;
+            background: #ecf0f1;
+            border-bottom: 8px solid #bdc3c7;
+            border-radius: 50% / 0 0 100% 100%;
+            position: absolute;
+            bottom: 65px; /* Raised slightly to never overlap the branding */
+            left: 175px;
+            cursor: pointer;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+        }
+        /* The Momo */
+        .momo {
+            width: 40px;
+            height: 30px;
+            background: #fff3cd;
+            border: 2px solid #e67e22;
+            border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;
+            position: absolute;
+            top: -40px;
+        }
+        /* Momo pleating details */
+        .momo::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 10px; width: 2px; height: 15px; background: #e67e22;
+            box-shadow: 8px 0 0 #e67e22, 16px 0 0 #e67e22;
+        }
+        /* Screens */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        h1 { color: #d35400; margin-bottom: 10px; }
+        button {
+            padding: 15px 40px;
+            font-size: 20px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 5px 0 #219653;
+        }
+        button:active { transform: translateY(3px); box-shadow: 0 2px 0 #219653; }
+        .hidden { display: none !important; }
+
+        /* Branding Footer Styles */
+        .branding-footer {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            text-align: right;
+            font-family: 'Arial', sans-serif;
+            z-index: 15;
+            pointer-events: auto;
+        }
+        .branding-footer .designer {
+            font-size: 11px;
+            color: #7f8c8d;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .branding-footer .instagram-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            text-decoration: none;
+            color: #2c3e50;
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+        /* Pure CSS Instagram Icon */
+        .ig-icon {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #2c3e50;
+            border-radius: 4px;
+            position: relative;
+            margin-right: 5px;
+            display: inline-block;
+            box-sizing: border-box;
+        }
+        .ig-icon::before {
+            content: '';
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border: 2px solid #2c3e50;
+            border-radius: 50%;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            box-sizing: border-box;
+        }
+        .ig-icon::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #2c3e50;
+            border-radius: 50%;
+            top: 1px; right: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="gameContainer">
+        <div id="scoreBoard">Momos: <span id="score">0</span></div>
+        <div id="timerBoard">Time: <span id="timeLeft">30</span>s</div>
+        
+        <div id="plate"></div>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="screen">
+            <h1>🥟 Momo Catcher!</h1>
+            <p>Drag the plate or tap the screen to catch falling momos before time runs out!</p>
+            <button onclick="startGame()">PLAY</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="screen hidden">
+            <h1>Time's Up! 🥟</h1>
+            <p>You caught <strong id="finalScore" style="color:#d35400; font-size: 24px;">0</strong> momos!</p>
+            <p id="rewardText" style="font-weight: bold; color: #27ae60;"></p>
+            <button onclick="startGame()">Play Again</button>
+        </div>
+
+        <!-- Designer Credits Corner -->
+        <div class="branding-footer">
+            <p class="designer">Designed by Harsh Rakate</p>
+            <a href="https://www.instagram.com/the.cinematic.studio" target="_blank" class="instagram-link">
+                <span class="ig-icon"></span>the.cinematic.studio
+            </a>
+        </div>
+    </div>
+
+<script>
+    const container = document.getElementById('gameContainer');
+    const plate = document.getElementById('plate');
+    const scoreDisplay = document.getElementById('score');
+    const timerDisplay = document.getElementById('timeLeft');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const finalScoreDisplay = document.getElementById('finalScore');
+    const rewardText = document.getElementById('rewardText');
+
+    let score = 0;
+    let timeLeft = 30;
+    let gameInterval;
+    let momoInterval;
+    let isPlaying = false;
+    let activeMomos = [];
+
+    // Track touch/mouse movement
+    container.addEventListener('mousemove', movePlate);
+    container.addEventListener('touchmove', (e) => {
+        movePlate(e.touches[0]);
+    }, { passive: true });
+
+    function movePlate(e) {
+        if (!isPlaying) return;
+        const rect = container.getBoundingClientRect();
+        let relX = e.clientX - rect.left;
+        // Keep plate inside container bounds
+        let plateWidth = plate.offsetWidth;
+        let newLeft = relX - (plateWidth / 2);
+        if (newLeft < 0) newLeft = 0;
+        if (newLeft > rect.width - plateWidth) newLeft = rect.width - plateWidth;
+        plate.style.left = newLeft + 'px';
+    }
+
+    function startGame() {
+        // Reset states
+        score = 0;
+        timeLeft = 30;
+        isPlaying = true;
+        scoreDisplay.innerText = score;
+        timerDisplay.innerText = timeLeft;
+        
+        // Clear previous momos
+        activeMomos.forEach(m => m.remove());
+        activeMomos = [];
+
+        startScreen.classList.add('hidden');
+        gameOverScreen.classList.add('hidden');
+
+        // Start loops
+        gameInterval = setInterval(updateTimer, 1000);
+        momoInterval = setInterval(spawnMomo, 600); 
+    }
+
+    function spawnMomo() {
+        if (!isPlaying) return;
+        const momo = document.createElement('div');
+        momo.classList.add('momo');
+        
+        const containerWidth = container.offsetWidth;
+        const randomLeft = Math.random() * (containerWidth - 40);
+        momo.style.left = randomLeft + 'px';
+        momo.style.top = '-40px';
+        
+        container.appendChild(momo);
+        activeMomos.push(momo);
+
+        let momoTop = -40;
+        let speed = 4 + Math.random() * 4; 
+
+        function fall() {
+            if (!isPlaying) return;
+            momoTop += speed;
+            momo.style.top = momoTop + 'px';
+
+            // Check collision with plate
+            const plateRect = plate.getBoundingClientRect();
+            const momoRect = momo.getBoundingClientRect();
+
+            if (
+                momoRect.bottom >= plateRect.top &&
+                momoRect.top <= plateRect.bottom &&
+                momoRect.right >= plateRect.left &&
+                momoRect.left <= plateRect.right
+            ) {
+                score++;
+                scoreDisplay.innerText = score;
+                momo.remove();
+                activeMomos = activeMomos.filter(m => m !== momo);
+                return;
+            }
+
+            // Missed momo (Stops just above the footer line)
+            if (momoTop > container.offsetHeight - 50) {
+                momo.remove();
+                activeMomos = activeMomos.filter(m => m !== momo);
+                return;
+            }
+
+            requestAnimationFrame(fall);
+        }
+        requestAnimationFrame(fall);
+    }
+
+    function updateTimer() {
+        timeLeft--;
+        timerDisplay.innerText = timeLeft;
+        if (timeLeft <= 0) {
+            endGame();
+        }
+    }
+
+    function endGame() {
+        isPlaying = false;
+        clearInterval(gameInterval);
+        clearInterval(momoInterval);
+        
+        finalScoreDisplay.innerText = score;
+        
+        // Reward logic
+        if (score >= 48) {
+            rewardText.innerText = "🎉 AMAZING! Show this screen to the counter for 5% off on your bill!";
+        } else {
+            rewardText.innerText = "So close! Catch 48 momos to unlock a discount!";
+        }
+
+        gameOverScreen.classList.remove('hidden');
+    }
+</script>
+</body>
+</html>
