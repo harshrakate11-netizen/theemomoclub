@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Momo Catcher!</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: #2c3e50;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        /* The Game Box */
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            max-width: 450px;
+            background: linear-gradient(to bottom, #fffae6, #ffeb99);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        
+        #scoreBoard {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #d35400;
+            z-index: 10;
+        }
+        #timerBoard {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #c0392b;
+            z-index: 10;
+        }
+        
+        /* The Plate */
+        #plate {
+            width: 90px;
+            height: 18px;
+            background: #ecf0f1;
+            border-bottom: 6px solid #bdc3c7;
+            border-radius: 50% / 0 0 100% 100%;
+            position: absolute;
+            bottom: 60px; 
+            left: calc(50% - 45px);
+            cursor: pointer;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+            touch-action: none;
+            z-index: 5;
+        }
+        
+        /* The Momo */
+        .momo {
+            width: 40px;
+            height: 30px;
+            background: #fff3cd;
+            border: 2px solid #e67e22;
+            border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;
+            position: absolute;
+            top: -40px;
+            z-index: 4;
+        }
+        .momo::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 10px; width: 2px; height: 15px; background: #e67e22;
+            box-shadow: 8px 0 0 #e67e22, 16px 0 0 #e67e22;
+        }
+        
+        /* Screens */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.96);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            text-align: center;
+            padding: 25px;
+        }
+        h1 { color: #d35400; margin-bottom: 10px; font-size: 26px; }
+        p { font-size: 15px; color: #34495e; line-height: 1.4; }
+        
+        button {
+            padding: 12px 35px;
+            font-size: 18px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #219653;
+            margin-top: 15px;
+        }
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #219653; }
+        .hidden { display: none !important; }
+
+        /* NEW: Centered Watermark Credits with Low Opacity */
+        .watermark-credits {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Keeps it dead-center on every screen */
+            text-align: center;
+            width: 100%;
+            padding: 0 20px;
+            opacity: 0.18; /* Subtle background blend */
+            z-index: 1; /* Sits completely behind game play elements */
+            pointer-events: none; /* User touches go straight through it to the game */
+        }
+        .watermark-credits .designer {
+            font-size: 11px;
+            color: #2c3e50;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+        .watermark-credits .instagram-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: #2c3e50;
+            font-size: 15px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        /* Pure CSS Instagram Icon */
+        .ig-icon {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #2c3e50;
+            border-radius: 4px;
+            position: relative;
+            margin-right: 6px;
+            display: inline-block;
+        }
+        .ig-icon::before {
+            content: '';
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border: 2px solid #2c3e50;
+            border-radius: 50%;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .ig-icon::after {
+            content: '';
+            position: absolute;
+            width: 1.5px;
+            height: 1.5px;
+            background: #2c3e50;
+            border-radius: 50%;
+            top: 1px; right: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="gameContainer">
+        <div id="scoreBoard">Momos: <span id="score">0</span></div>
+        <div id="timerBoard">Time: <span id="timeLeft">30</span>s</div>
+        
+        <div id="plate"></div>
+
+        <div id="startScreen" class="screen">
+            <h1>🥟 Momo Catcher!</h1>
+            <p>Drag the plate or tap the screen to catch falling momos before time runs out!</p>
+            <button onclick="startGame()">PLAY</button>
+        </div>
+
+        <div id="gameOverScreen" class="screen hidden">
+            <h1>Time's Up! 🥟</h1>
+            <p>You caught <strong id="finalScore" style="color:#d35400; font-size: 24px;">0</strong> momos!</p>
+            <p id="rewardText" style="font-weight: bold; color: #27ae60; padding: 0 10px;"></p>
+            <button onclick="startGame()">Play Again</button>
+        </div>
+
+        <div class="watermark-credits">
+            <p class="designer">Designed by Harsh Rakate</p>
+            <div class="instagram-link">
+                <span class="ig-icon"></span>the.cinematic.studio
+            </div>
+        </div>
+    </div>
+
+<script>
+    const container = document.getElementById('gameContainer');
+    const plate = document.getElementById('plate');
+    const scoreDisplay = document.getElementById('score');
+    const timerDisplay = document.getElementById('timeLeft');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const finalScoreDisplay = document.getElementById('finalScore');
+    const rewardText = document.getElementById('rewardText');
+
+    let score = 0;
+    let timeLeft = 30;
+    let gameInterval;
+    let momoInterval;
+    let isPlaying = false;
+    let activeMomos = [];
+
+    container.addEventListener('mousemove', movePlate);
+    container.addEventListener('touchmove', (e) => {
+        movePlate(e.touches[0]);
+    }, { passive: true });
+    container.addEventListener('touchstart', (e) => {
+        movePlate(e.touches[0]);
+    }, { passive: true });
+
+    function movePlate(e) {
+        if (!isPlaying) return;
+        const rect = container.getBoundingClientRect();
+        let relX = e.clientX - rect.left;
+        let plateWidth = plate.offsetWidth;
+        let newLeft = relX - (plateWidth / 2);
+        
+        if (newLeft < 0) newLeft = 0;
+        if (newLeft > rect.width - plateWidth) newLeft = rect.width - plateWidth;
+        plate.style.left = newLeft + 'px';
+    }
+
+    function startGame() {
+        score = 0;
+        timeLeft = 30;
+        isPlaying = true;
+        scoreDisplay.innerText = score;
+        timerDisplay.innerText = timeLeft;
+        
+        activeMomos.forEach(m => m.remove());
+        activeMomos = [];
+
+        startScreen.classList.add('hidden');
+        gameOverScreen.classList.add('hidden');
+
+        gameInterval = setInterval(updateTimer, 1000);
+        momoInterval = setInterval(spawnMomo, 600); 
+    }
+
+    function spawnMomo() {
+        if (!isPlaying) return;
+        const momo = document.createElement('div');
+        momo.classList.add('momo');
+        
+        const containerWidth = container.offsetWidth;
+        const randomLeft = Math.random() * (containerWidth - 40);
+        momo.style.left = randomLeft + 'px';
+        momo.style.top = '-40px';
+        
+        container.appendChild(momo);
+        activeMomos.push(momo);
+
+        let momoTop = -40;
+        let speed = 4 + Math.random() * 4; 
+
+        function fall() {
+            if (!isPlaying) return;
+            momoTop += speed;
+            momo.style.top = momoTop + 'px';
+
+            const plateRect = plate.getBoundingClientRect();
+            const momoRect = momo.getBoundingClientRect();
+
+            if (
+                momoRect.bottom >= plateRect.top &&
+                momoRect.top <= plateRect.bottom &&
+                momoRect.right >= plateRect.left &&
+                momoRect.left <= plateRect.right
+            ) {
+                score++;
+                scoreDisplay.innerText = score;
+                momo.remove();
+                activeMomos = activeMomos.filter(m => m !== momo);
+                return;
+            }
+
+            if (momoTop > container.offsetHeight) {
+                momo.remove();
+                activeMomos = activeMomos.filter(m => m !== momo);
+                return;
+            }
+
+            requestAnimationFrame(fall);
+        }
+        requestAnimationFrame(fall);
+    }
+
+    function updateTimer() {
+        timeLeft--;
+        timerDisplay.innerText = timeLeft;
+        if (timeLeft <= 0) {
+            endGame();
+        }
+    }
+
+    function endGame() {
+        isPlaying = false;
+        clearInterval(gameInterval);
+        clearInterval(momoInterval);
+        
+        finalScoreDisplay.innerText = score;
+        
+        if (score >= 20) {
+            rewardText.innerText = "🎉 AMAZING! Show this screen to the counter for 10% off your Momos!";
+        } else {
+            rewardText.innerText = "So close! Catch 20 momos to unlock a discount!";
+        }
+
+        gameOverScreen.classList.remove('hidden');
+    }
+</script>
+</body>
+</html>
